@@ -8,11 +8,7 @@
  * @package 	WooCommerce/Templates
  * @version     2.1.0
  */
-
-if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
-}
-
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 ?>
 <tr class="shipping">
 	<th><?php
@@ -23,7 +19,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 		}
 	?></th>
 	<td>
-		<?php if ( ! empty( $available_methods ) ) : ?>
+<?php 
+$state_required = true;
+$postcode_required = true;
+if ( isset( $_POST['post_data'] ) ) { //checkout - check if state/postcode are required
+	$post_data = array();
+	parse_str( $_POST['post_data'], $post_data );
+	$address_type = 'billing_';
+	if ( !empty( $post_data['ship_to_different_address'] ) ) {
+		$address_type = 'shipping_';
+	}
+	if ( !empty( $post_data[$address_type . 'country'] ) ) {
+		$checkout_fields = WC()->countries->get_address_fields( $post_data[$address_type . 'country'],
+				$address_type );
+		if ( !empty( $checkout_fields[$address_type . 'state'] ) && isset( $checkout_fields[$address_type . 'state']['required'] ) ) {
+			$state_required = $checkout_fields[$address_type . 'state']['required'];
+		}
+		if ( !empty( $checkout_fields[$address_type . 'postcode'] ) && isset( $checkout_fields[$address_type . 'postcode']['required'] ) ) {
+			$postcode_required = $checkout_fields[$address_type . 'postcode']['required'];
+		}
+	}
+}
+
+if ( ! empty( $available_methods ) ) : ?>
 
 			<?php if ( 1 === count( $available_methods ) ) :
 				$method = current( $available_methods );
@@ -52,7 +70,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			<?php endif; ?>
 
-		<?php elseif ( ! WC()->customer->get_shipping_state() || ! WC()->customer->get_shipping_postcode() ) : ?>
+		<?php elseif ( ($state_required && ! WC()->customer->get_shipping_state()) || ($postcode_required && ! WC()->customer->get_shipping_postcode()) ) : ?>
 
 			<?php if ( is_cart() && get_option( 'woocommerce_enable_shipping_calc' ) === 'yes' ) : ?>
 
@@ -73,13 +91,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php if ( is_cart() ) : ?>
 
 				<?php echo apply_filters( 'woocommerce_cart_no_shipping_available_html',
-					'<div class="woocommerce-info"><p>' . __( 'There doesn&lsquo;t seem to be any available shipping methods. Please double check your address, or contact us if you need any help.', 'woocommerce' ) . '</p></div>'
+					'<div class="woocommerce-info"><p>' . __( 'There don&lsquo;t seem to be any available shipping methods. Please double check your address, or contact us if you need any help.', 'woocommerce' ) . '</p></div>'
 				); ?>
 
 			<?php else : ?>
 
 				<?php echo apply_filters( 'woocommerce_no_shipping_available_html',
-					'<p>' . __( 'There doesn&lsquo;t seem to be any available shipping methods. Please double check your address, or contact us if you need any help.', 'woocommerce' ) . '</p>'
+					'<p>' . __( 'There don&lsquo;t seem to be any available shipping methods. Please double check your address, or contact us if you need any help.', 'woocommerce' ) . '</p>'
 				); ?>
 
 			<?php endif; ?>
